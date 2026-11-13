@@ -14,3 +14,8 @@ export interface Run{id:string;scenario_id:string;status:string;result:Result;er
 export interface Review{id:string;run_id:string;note:string;decision:string;author:string;created_at:string}
 export interface Report{id:string;run_id:string;title:string;published_by:string;created_at:string}
 export interface Audit{id:string;actor:string;action:string;status:number;created_at:string}
+export interface RiskGroup{name:string;probability:number;arc_ids:string[]}
+export interface RiskState{failed_group_names:string[];probability:number;throughput:number}
+export interface RiskBucket{throughput:number;probability:number;state_count:number;states:RiskState[]}
+export interface RiskResult{reference_throughput:number;target_throughput:number;expected_throughput:number;target_probability:number;probability_sum:number;distribution:RiskBucket[];group_count:number;state_count:number;distinct_throughput_count:number;maxflow_call_count:number;deterministic_failure_groups:string[];zero_probability_groups:string[];base_disabled_arc_ids:string[];checksum:string}
+export interface RiskAnalysis{id:string;run_id:string;name:string;target_throughput:number;groups:RiskGroup[];result:RiskResult;created_by:string;created_at:string}

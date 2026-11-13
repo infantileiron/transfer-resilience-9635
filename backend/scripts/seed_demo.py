@@ -1,8 +1,9 @@
 import json
 from sqlalchemy import select,func
 from src.config.database import Base,engine,Session
-from src.models import User,NetworkDataset,TransferArc,OutageScenario,NetworkRun,ResilienceReview,Report
+from src.models import User,NetworkDataset,TransferArc,OutageScenario,NetworkRun,ResilienceReview,Report,RiskAnalysis
 from src.services.analysis import analyze
+from src.services.risk_enum import enumerate_risk
 from src.services.arcs import snapshot
 from src.utils.security import hash_password
 from src.utils.time import now
@@ -25,5 +26,11 @@ def seed():
   if not db.get(NetworkRun,"demo-run"):db.add(NetworkRun(id="demo-run",scenario_id="demo-outage",status="completed",result=analyze(db.get(NetworkDataset,"demo-data"),db.get(OutageScenario,"demo-outage")),error="",created_at=now()));db.flush()
   if not db.get(ResilienceReview,"demo-review"):db.add(ResilienceReview(id="demo-review",run_id="demo-run",note="每条边独立保留ID，逐边容量界与节点守恒通过，最大流等于割容量。最短时长路径是独立指标，不解释为最大流分配。",decision="accepted",author="analyst@hengyuan.demo",created_at=now()));db.flush()
   if not db.get(Report,"demo-report"):db.add(Report(id="demo-report",run_id="demo-run",title="衡远模拟中转·停边韧性复核",published_by="admin@hengyuan.demo",created_at=now()))
-  db.commit();return {m.__tablename__:db.scalar(select(func.count()).select_from(m)) for m in (User,NetworkDataset,TransferArc,OutageScenario,NetworkRun,ResilienceReview,Report)}
+  db.flush()
+  if not db.get(RiskAnalysis,"demo-risk"):
+   demo_run=db.get(NetworkRun,"demo-run")
+   risk_groups=[{"name":"北岸雨带·源站出弧","probability":0.10,"arc_ids":["e01","e02","e19"]},{"name":"中部内涝·港西通道","probability":0.25,"arc_ids":["e05","e06","e17"]},{"name":"外联枢纽雨带","probability":0.20,"arc_ids":["e11","e12"]}]
+   risk_result=enumerate_risk(demo_run.result,risk_groups,demo_run.result["outage"]["max_flow"]["value"])
+   db.add(RiskAnalysis(id="demo-risk",run_id="demo-run",name="雨灾风险组·停e13快照",target_throughput=demo_run.result["outage"]["max_flow"]["value"],groups=risk_groups,result=risk_result,created_by="admin@hengyuan.demo",created_at=now()))
+  db.commit();return {m.__tablename__:db.scalar(select(func.count()).select_from(m)) for m in (User,NetworkDataset,TransferArc,OutageScenario,NetworkRun,ResilienceReview,Report,RiskAnalysis)}
 if __name__=="__main__":print(json.dumps(seed(),ensure_ascii=False))

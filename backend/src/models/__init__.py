@@ -5,4 +5,5 @@ from .scenario import OutageScenario
 from .run import NetworkRun
 from .review import ResilienceReview
 from .report import Report
+from .risk import RiskAnalysis
 from .audit import AuditEvent
